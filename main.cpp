@@ -117,9 +117,10 @@ int main(int argc, char *argv[])
     int failures = 0;
     int success = 0;
     int skipped = 0;
+    bool verbose = a.arguments().contains("--verbose");
 
-    if (argc!=4) {
-        qDebug() << "usage: makeuniversal <destination> <qtbase x86_64 folder> <qtbase arn64 folder>";
+    if (argc<4) {
+        qDebug() << "usage: makeuniversal <destination> <qtbase x86_64 folder> <qtbase arm64 folder>";
 
         return -1;
     }
@@ -128,11 +129,13 @@ int main(int argc, char *argv[])
     QString arm64Root = QFileInfo(argv[3]).absoluteFilePath()+"/";
     QString universalRoot = QFileInfo(argv[1]).absoluteFilePath();
 
-    qDebug() << "copying qt distribution from x86_64 to destination (this may take a while)...";
+    if (verbose)
+        qDebug() << "copying qt distribution from x86_64 to destination (this may take a while)...";
 
     copyFolder(x86_64Root, universalRoot);
 
-    qDebug() << "creating universal binaries...";
+    if (verbose)
+        qDebug() << "creating universal binaries...";
 
     QDirIterator it(universalRoot, QDir::NoFilter, QDirIterator::Subdirectories);
 
@@ -158,7 +161,9 @@ int main(int argc, char *argv[])
 
             if (checkArch(arm64File, arm64)==HasArch) {
                 if (lipo(x86_64File, arm64File)==0) {
-                    qDebug() << "success adding arm64 arch to binary:" << subPath;
+
+                    if (verbose)
+                        qDebug() << "success adding arm64 arch to binary:" << subPath;
 
                     success++;
                 } else {
@@ -169,18 +174,17 @@ int main(int argc, char *argv[])
             }
         } else {
             if (archType==HasArch) {
-                qDebug() << "skipped adding arm64 arch to binary:" << subPath;
+
+                if (verbose)
+                    qDebug() << "skipped adding arm64 arch to binary:" << subPath;
 
                 skipped++;
             }
         }
     }
 
-    if (success+failures+skipped) {
-        qDebug();
-    }
-
-    qDebug() << "Total binaries:" << (success+failures+skipped) << ", Skipped:" << skipped << ", Failed:" << failures;
+    if (verbose || failures)
+        qDebug() << "Total binaries:" << (success+failures+skipped) << ", Skipped:" << skipped << ", Failed:" << failures;
 
     return 0;
 }
